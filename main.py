@@ -1,15 +1,32 @@
-# This is a sample Python script.
+import sys
+import re
+from unicodedata import normalize
 
-# Press Mayús+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+def leer_archivos(index):
+    print("Parametro", index, ":", sys.argv[index])
+    try:
+        reader = open(sys.argv[index], "r", encoding="utf8")
+    except OSError:
+        print("El archivo no se ha podido abrir correctamente")
+        sys.exit()
+    print("Archivo leido con exito")
+
+    texto = reader.read()
+    reader.close()
+    return texto
+
+# Convertimos el texto
+def extraccion(texto):
+    texto = texto.lower()
+    palabras = texto.split()
+
+    print(palabras)
 
 
 
-
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print("prueba 2")
+    for index in range(1, len(sys.argv)):
+        texto = leer_archivos(index)
+        extraccion(texto)
 
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
