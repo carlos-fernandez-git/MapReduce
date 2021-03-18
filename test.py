@@ -1,24 +1,37 @@
-import logging
-import threading
-import datetime
+# Leemos el archivo de texto (input)
+import sys
 import time
 
-def consultar(texto):
-    time.sleep(3)
-    return
+
+def input():
+    try:
+        reader = open(sys.argv[1], "r", encoding="utf8")
+    except OSError:
+        print("El archivo no se ha podido abrir correctamente")
+        sys.exit()
+
+    texto = reader.read()
+    reader.close()
+    return texto
 
 
-tiempo_ini = datetime.datetime.now()
+def word_count(str):
+    counts = dict()
+    words = str.split()
 
-t1 = threading.Thread(name="thread 1", target=consultar, args=("hola", ))
+    for word in words:
+        if word in counts:
+            counts[word] += 1
+        else:
+            counts[word] = 1
+
+    return counts
+
+if __name__ == '__main__':
+    start_time = time.time()
+    text = input()
+    word_count(text)
+
+    print("--- %s seconds ---" % (time.time() - start_time))
 
 
-
-t1.start()
-
-t1.join()
-
-tiempo_fin = datetime.datetime.now()
-
-
-print("tiempo transcurrido " + str(tiempo_fin.second - tiempo_ini.second))
