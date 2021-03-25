@@ -34,8 +34,18 @@ def splitting(input_text):
         for id_process in range(n_processes):
             results.append(executor.submit(mapping, words, n_processes, id_process, word_map_result))
 
+        all_dictionaries = []
         for f in concurrent.futures.as_completed(results):
-            print(f.result())
+            all_dictionaries.append(f.result())
+
+    dictionary_result = {}
+    for d in all_dictionaries:
+        for key, value in d.items():
+            if key in dictionary_result:
+                dictionary_result[key] = dictionary_result[key] + value
+            else:
+                dictionary_result[key] = value
+    return dictionary_result
 
 
 def mapping(words, n_processes, id_process, word_map_result):
@@ -53,7 +63,14 @@ def shuffle(word_map_result):
             result_dict[word[0]].append(1)
         else:
             result_dict[word[0]] = [1]
-    return result_dict
+    return reduce(result_dict)
+
+
+def reduce(shuffle_result_dict):
+    dict_final_reduced = {}
+    for word in shuffle_result_dict:
+        dict_final_reduced[word] = sum(shuffle_result_dict[word])
+    return dict_final_reduced
 
 
 if __name__ == '__main__':
@@ -65,8 +82,8 @@ if __name__ == '__main__':
     for index in range(1, len(sys.argv)):
         print(sys.argv[index], ":", sep="")
         text = input(index)
-        splitting(text)
-        # for word in result_dictionary_words:
-        #   print(word, ':', result_dictionary_words[word])
+        result_dictionary_words = splitting(text)
+        for word in result_dictionary_words:
+           print(word, ':', result_dictionary_words[word])
 
     print("--- %s seconds ---" % (time.time() - start_time))
