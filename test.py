@@ -30,8 +30,9 @@ def word_count(str):
 if __name__ == '__main__':
     start_time = time.time()
     text = input()
-    word_count(text)
-
+    result_dictionary_words = word_count(text)
+    for word in result_dictionary_words:
+        print(word, ':', result_dictionary_words[word])
     print("--- %s seconds ---" % (time.time() - start_time))
 
 
