@@ -9,7 +9,7 @@ def input(index):
     try:
         reader = open(sys.argv[index], "r", encoding="utf8")
     except OSError:
-        print("Error")
+        print("txt file not found")
         sys.exit()
 
     texto = reader.read()
@@ -48,8 +48,14 @@ def shuffle(word_map_result, id_process):
     return reduce(result_dict, id_process)
 
 
-def mapping(words, id_process):
+# Cada proceso recibe la cadena y la procesa
+def mapping(part_of_text, id_process):
     print(id_process, "Entered mapping function")
+    part_of_text = part_of_text.lower()
+    processed_text = re.sub('[,.;:!¡?¿()]+', '', part_of_text)
+    print("Splitting text")
+    words = processed_text.split()
+    print("Text splitted")
     word_map_result = []
     for i in range(len(words)):
         word_map_result.append([words[i], 1])
@@ -59,22 +65,14 @@ def mapping(words, id_process):
 
 # Convert text to list of words
 def splitting(input_text):
-
-    input_text = input_text.lower()
-    input_text = re.sub('[,.;:!¡?¿()]+', '', input_text)
-    print("Splitting text")
-    words = input_text.split()
-    print("Text splitted")
     n_processes = 10
-    # Creating processes
 
+    # Creating processes
     with concurrent.futures.ProcessPoolExecutor() as executor:
         print("Creating processes...")
         results = []
-        for id_process in range(n_processes):
-            results.append(executor.submit(mapping,
-                                           words[int((id_process / n_processes) * len(words)): int(
-                                               ((id_process + 1) / n_processes) * len(words))], id_process))
+        for id_process, part_of_text in enumerate(divide_chunks(input_text, int(len(input_text) / n_processes))):
+            results.append(executor.submit(mapping, part_of_text, id_process))
 
         all_dictionaries = []
         for f in concurrent.futures.as_completed(results):
@@ -83,17 +81,49 @@ def splitting(input_text):
     return merge_dictionaries(all_dictionaries)
 
 
-if __name__ == '__main__':
+def save_result_file(result_dictionary_words, index):
+    try:
+        f = open("file1_result%d.txt" % index, 'w', encoding="utf-8")
+    except OSError:
+        print("Error in write result file")
+        sys.exit()
+
+    for word in result_dictionary_words:
+        line = word + ' : ' + str(result_dictionary_words[word]) + "\n"
+        f.write(line)
+
+
+# Recibe el texto y el tamaño a procesar por cada proceso
+# Busca donde hay un espacio en blanco para no cortar el texto y lo devuelve
+def divide_chunks(text, chunk):
+    start = 0
+    while True:
+        i = chunk
+        if start + i >= len(text):
+            return text[start:]
+        while text[start + i] != ' ':
+            i -= 1
+        yield text[start:start + i]
+        start += i + 1
+
+
+def main():
     if len(sys.argv) == 1:
         print("Please, specify a text file...")
         sys.exit()
+
+    # Start count time
     start_time = time.time()
 
+    # For each .txt
     for index in range(1, len(sys.argv)):
         print(sys.argv[index], ":", sep="")
         text = input(index)
         result_dictionary_words = splitting(text)
-        for word in result_dictionary_words:
-            print(word, ':', result_dictionary_words[word])
+        save_result_file(result_dictionary_words, index)
 
-    print("--- %s seconds ---" % (time.time() - start_time))
+        print("--- %s seconds ---" % (time.time() - start_time))
+
+
+if __name__ == '__main__':
+    main()
