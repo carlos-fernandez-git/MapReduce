@@ -1,11 +1,15 @@
+#!/usr/bin/env python3
+
+# Autors:
+# Carlos Fernández Morillas - 1428230
+# Joel Ferrando Ruiz - 1460649
+
 import sys
 import re
 import concurrent.futures
-import time
 
 
-# Read text file
-def input(index):
+def read_text_file(index):
     try:
         reader = open(sys.argv[index], "r", encoding="utf8")
     except OSError:
@@ -16,6 +20,8 @@ def input(index):
     reader.close()
     return texto
 
+
+# Itera sobre els diccionaris mirant sumant els valors de les mateixes claus dels diccionaris
 
 def merge_dictionaries(all_dictionaries):
     dictionary_result = {}
@@ -28,16 +34,24 @@ def merge_dictionaries(all_dictionaries):
     return dictionary_result
 
 
+# Recorre el diccionari obtingut de la funció shuffle()
+# Per cada clau (paraula) suma els valors (números 1)
+# Guarda aquesta suma com a valor de cada clau
+# Retorna el diccionari resultat
+
 def reduce(shuffle_result_dict, id_process):
-    print(id_process, "Entered reduce function")
     dict_final_reduced = {}
     for word in shuffle_result_dict:
         dict_final_reduced[word] = sum(shuffle_result_dict[word])
     return dict_final_reduced
 
 
+# Recorre la llista amb les paraules i l'1
+# Si la clau (nom de la paraula) ja es troba al diccionari, afegeix un 1 al valor de la clau
+# Si no, crea la clau amb el valor [1]
+# Crida a funció reduce()
+
 def shuffle(word_map_result, id_process):
-    print(id_process, "Entered shuffle function")
     result_dict = {}
 
     for word in word_map_result:
@@ -48,14 +62,16 @@ def shuffle(word_map_result, id_process):
     return reduce(result_dict, id_process)
 
 
-# Cada proceso recibe la cadena y la procesa
+# Transforma els caràcters de la String a minúscules
+# Elimina els caràcters especials per deixar només lletres
+# Divideix la String en paraules i les guarda en una llista
+# Crea llista amb [paraula, 1]
+# Crida a funció shuffle()
+
 def mapping(part_of_text, id_process):
-    print(id_process, "Entered mapping function")
     part_of_text = part_of_text.lower()
     processed_text = re.sub('[,.;:!¡?¿()]+', '', part_of_text)
-    print("Splitting text")
     words = processed_text.split()
-    print("Text splitted")
     word_map_result = []
     for i in range(len(words)):
         word_map_result.append([words[i], 1])
@@ -63,15 +79,24 @@ def mapping(part_of_text, id_process):
     return shuffle(word_map_result, id_process)
 
 
-# Convert text to list of words
-def splitting(input_text):
-    n_processes = 10
+# Crea els diferents processos mitjançant la llibreria concurrent.futures Crida a funció divide_chunks() per dividir
+# la string entre els diferents processos Cada procés executa la funció mapping() amb la seva part del text Un cop
+# tots els processos tenen el seu diccionari, crida a la funció merge_dictionaries() per ajuntar els diccionaris de
+# tots els processos
 
+def splitting(input_text):
+    try:
+        if not input_text:
+            raise ValueError('Empty file!')
+    except ValueError as e:
+        print(e)
+
+    n_processes = 10
     # Creating processes
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        print("Creating processes...")
         results = []
-        for id_process, part_of_text in enumerate(divide_chunks(input_text, int(len(input_text) / n_processes))):
+        for id_process, part_of_text in enumerate(divide_chunks(input_text,
+                                                                int(len(input_text) / n_processes))):
             results.append(executor.submit(mapping, part_of_text, id_process))
 
         all_dictionaries = []
@@ -80,6 +105,8 @@ def splitting(input_text):
 
     return merge_dictionaries(all_dictionaries)
 
+
+# Guarda els resultats a un .txt
 
 def save_result_file(result_dictionary_words, index):
     try:
@@ -95,6 +122,7 @@ def save_result_file(result_dictionary_words, index):
 
 # Recibe el texto y el tamaño a procesar por cada proceso
 # Busca donde hay un espacio en blanco para no cortar el texto y lo devuelve
+
 def divide_chunks(text, chunk):
     start = 0
     while True:
@@ -107,22 +135,25 @@ def divide_chunks(text, chunk):
         start += i + 1
 
 
-def main():
-    if len(sys.argv) == 1:
-        print("Please, specify a text file...")
-        sys.exit()
+def show_dictionary(result_dictionary_words):
+    for word in result_dictionary_words:
+        print(word + ' : ' + str(result_dictionary_words[word]))
 
-    # Start count time
-    start_time = time.time()
+
+def main():
+    try:
+        if len(sys.argv) == 1:
+            print("Please, specify a text file...")
+    except ValueError as e:
+        print(e)
+        sys.exit()
 
     # For each .txt
     for index in range(1, len(sys.argv)):
         print(sys.argv[index], ":", sep="")
-        text = input(index)
+        text = read_text_file(index)
         result_dictionary_words = splitting(text)
-        save_result_file(result_dictionary_words, index)
-
-        print("--- %s seconds ---" % (time.time() - start_time))
+        show_dictionary(result_dictionary_words)
 
 
 if __name__ == '__main__':
